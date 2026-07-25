@@ -6,7 +6,8 @@
   "main": "src/animetosho-nzb.js",
   "scripts": {
     "build": "node build.js",
-    "test": "node test.js"
+    "prebuild": "echo 'Building extension...'",
+    "postbuild": "echo 'Build complete! Commit dist/ and push to GitHub.'"
   },
   "keywords": ["hayase", "extension", "nzb", "animetosho", "usenet"],
   "author": "",
