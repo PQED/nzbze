@@ -15,9 +15,9 @@
       "US",
       "JP"
     ],
-    "code": "https://raw.githubusercontent.com/PQED/hayase-animetosho-nzb/main/dist/animetosho-nzb.js",
-    "codeJson": "https://raw.githubusercontent.com/PQED/hayase-animetosho-nzb/main/dist/animetosho-nzb.json",
-    "update": "https://raw.githubusercontent.com/PQED/hayase-animetosho-nzb/main/index.json",
+    "code": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
+    "codeJson": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.json",
+    "update": "https://raw.githubusercontent.com/PQED/nzbze/main/index.json",
     "rateLimit": 5
   }
 ]
