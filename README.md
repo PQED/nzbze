@@ -17,24 +17,16 @@ A **Hayase extension** that provides NZB access to AnimeTosho's Usenet collectio
    - Open Hayase settings
    - Go to **Extensions**
    - Click **Add Custom Extension**
-   - Paste the manifest URL: `https://raw.githubusercontent.com/yourusername/hayase-animetosho-nzb/main/index.json`
+   - Paste the manifest URL: \https://raw.githubusercontent.com/yourusername/hayase-animetosho-nzb/main/index.json\
 
-## Files
+## Build
 
-- **`index.json`** - Extension manifest (describes the extension to Hayase)
-- **`src/animetosho-nzb.js`** - Extension implementation (fetches NZBs from AnimeTosho)
-- **`package.json`** - Project metadata
+\\\powershell
+npm run build
+\\\
 
-## How It Works
+This creates minified versions in the \dist/\ folder.
 
-The extension intercepts queries from Hayase with:
-- `hash`: A unique identifier for the release
-- `name`: The release name
-- `anidbAid`: AniDB anime ID
-- `episode`: Episode number (for single episodes)
-- `files`: File list (for batches)
+## License
 
-It then queries AnimeTosho's JSON API (`https://feed.animetosho.org/json`) with the AniDB ID and returns the **direct NZB download URL** to Hayase.
-
-## API Endpoint
-
+MIT
