@@ -37,4 +37,4 @@ class AnimetoshoNzb extends NZBSource {
   }
 }
 
-module.exports = new AnimetoshoNzb();
+module.exports = [new AnimetoshoNzb()];
