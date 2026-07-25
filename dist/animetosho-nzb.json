@@ -12,7 +12,6 @@
     "media": "both",
     "languages": ["en", "ja"],
     "code": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
-    "codeJson": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
     "update": "https://raw.githubusercontent.com/PQED/nzbze/main/index.json",
     "rateLimit": 5
   }
