@@ -1,3 +1,26 @@
+[
+  {
+    "manifestVersion": 2,
+    "deprecated": false,
+    "name": "AnimeTosho NZB",
+    "description": "Access NZB releases from AnimeTosho via Usenet",
+    "id": "animetosho-nzb",
+    "version": "1.0.0",
+    "type": "nzb",
+    "accuracy": "high",
+    "icon": "https://animetosho.org/assets/images/favicon.png",
+    "media": "both",
+    "url": "aHR0cHM6Ly9mZWVkLmFuaW1ldG9zaG8ub3JnL2pzb24=",
+    "languages": [
+      "US",
+      "JP"
+    ],
+    "code": "https://raw.githubusercontent.com/PQED/hayase-animetosho-nzb/main/dist/animetosho-nzb.js",
+    "codeJson": "https://raw.githubusercontent.com/PQED/hayase-animetosho-nzb/main/dist/animetosho-nzb.json",
+    "update": "https://raw.githubusercontent.com/PQED/hayase-animetosho-nzb/main/index.json",
+    "rateLimit": 5
+  }
+]
 {
   "code": "export class AnimetoshoNzb extends NZBSource {\r\n  constructor() {\r\n    super();\r\n    this.name = \"AnimeTosho NZB\";\r\n    this.baseUrl = \"https://feed.animetosho.org/json\";\r\n  }\r\n\r\n  async test() {\r\n    // Test connectivity\r\n    try {\r\n      const response = await fetch(`${this.baseUrl}?show=nzb&id=431894`);\r\n      return response.ok;\r\n    } catch (error) {\r\n      return false;\r\n    }\r\n  }\r\n\r\n  async single(hash, name) {\r\n    // Lookup single NZB by hash or name\r\n    try {\r\n      const response = await fetch(`${this.baseUrl}?show=nzb&q=${encodeURIComponent(name)}`);\r\n      const data = await response.json();\r\n      \r\n      if (Array.isArray(data) && data.length > 0) {\r\n        // Return the first match's nzb_url\r\n        return data[0].nzb_url || null;\r\n      }\r\n      return null;\r\n    } catch (error) {\r\n      return null;\r\n    }\r\n  }\r\n\r\n  async batch(hashes) {\r\n    // Lookup multiple NZBs\r\n    const results = {};\r\n    for (const hash of hashes) {\r\n      results[hash] = await this.single(hash, hash);\r\n    }\r\n    return results;\r\n  }\r\n}\r\n"
 }
