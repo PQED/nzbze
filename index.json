@@ -9,7 +9,6 @@
   "url": "aHR0cHM6Ly9mZWVkLmFuaW1ldG9zaG8ub3JnL2pzb24=",
   "languages": ["US", "JP"],
   "code": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
-  "codeJson": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.json",
   "update": "https://raw.githubusercontent.com/PQED/nzbze/main/index.json",
   "rateLimit": 5
 }
