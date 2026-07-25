@@ -10,13 +10,9 @@
     "accuracy": "high",
     "icon": "https://animetosho.org/assets/images/favicon.png",
     "media": "both",
-    "url": "aHR0cHM6Ly9mZWVkLmFuaW1ldG9zaG8ub3JnL2pzb24=",
-    "languages": [
-      "US",
-      "JP"
-    ],
+    "languages": ["en", "ja"],
     "code": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
-    "codeJson": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.json",
+    "codeJson": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
     "update": "https://raw.githubusercontent.com/PQED/nzbze/main/index.json",
     "rateLimit": 5
   }
