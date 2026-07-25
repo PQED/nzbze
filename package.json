@@ -9,11 +9,20 @@
     "prebuild": "echo 'Building extension...'",
     "postbuild": "echo 'Build complete! Commit dist/ and push to GitHub.'"
   },
-  "keywords": ["hayase", "extension", "nzb", "animetosho", "usenet"],
-  "author": "",
+  "keywords": [
+    "hayase",
+    "extension",
+    "nzb",
+    "animetosho",
+    "usenet"
+  ],
+  "author": "PQED",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/hayase-animetosho-nzb.git"
+    "url": "https://github.com/PQED/nzbze.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }
