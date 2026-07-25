@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/animetosho-nzb.js",
   "scripts": {
-    "build": "node build.js",
+    "build": "node build.cjs",
     "prebuild": "echo 'Building extension...'",
     "postbuild": "echo 'Build complete! Commit dist/ and push to GitHub.'"
   },
