@@ -1,4 +1,4 @@
-export class AnimetoshoNzb extends NZBSource {
+class AnimetoshoNzb extends NZBSource {
   constructor() {
     super();
     this.name = "AnimeTosho NZB";
@@ -37,4 +37,4 @@ export class AnimetoshoNzb extends NZBSource {
   }
 }
 
-export default new AnimetoshoNzb();
+module.exports = new AnimetoshoNzb();
