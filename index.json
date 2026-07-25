@@ -1,0 +1,19 @@
+[
+  {
+    "manifestVersion": 2,
+    "deprecated": false,
+    "name": "AnimeTosho NZB",
+    "description": "Access NZB releases from AnimeTosho via Usenet",
+    "id": "animetosho-nzb",
+    "version": "1.0.0",
+    "type": "nzb",
+    "accuracy": "high",
+    "icon": "https://animetosho.org/assets/images/favicon.png",
+    "media": "both",
+    "url": "aHR0cHM6Ly9mZWVkLmFuaW1ldG9zaG8ub3JnL2pzb24=",
+    "languages": ["US", "JP"],
+    "code": "https://raw.githubusercontent.com/yourusername/hayase-animetosho-nzb/main/src/animetosho-nzb.js",
+    "update": "https://raw.githubusercontent.com/yourusername/hayase-animetosho-nzb/main/index.json",
+    "rateLimit": 5
+  }
+]
