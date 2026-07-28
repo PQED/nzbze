@@ -4,7 +4,7 @@
       "id": "animetosho-nzb",
       "name": "AnimeTosho NZB",
       "type": "nzb",
-      "file": "/dist/animetosho-nzb.js",
+      "file": "animetosho-nzb.js",
       "icon": "https://animetosho.org/assets/images/favicon.png",
       "version": "1.0.0",
       "accuracy": "high",
