@@ -1,40 +1,70 @@
-class AnimetoshoNzb extends NZBSource {
-  constructor() {
-    super();
-    this.name = "AnimeTosho NZB";
-    this.baseUrl = "https://feed.animetosho.org/json";
-  }
+/**
+ * Animetosho NZB Plugin
+ * Location: dist/animetosho-nzb.js
+ */
 
-  async test() {
-    try {
-      const response = await fetch(`${this.baseUrl}?show=nzb&id=431894`);
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
-  }
+const axios = require('axios');
 
-  async single(hash, name) {
-    try {
-      const response = await fetch(`${this.baseUrl}?show=nzb&q=${encodeURIComponent(name)}`);
-      const data = await response.json();
-      
-      if (Array.isArray(data) && data.length > 0) {
-        return data[0].nzb_url || null;
-      }
-      return null;
-    } catch (error) {
-      return null;
+class AnimetoshoNzb {
+    constructor() {
+        this.name = "AnimeTosho NZB";
+        this.id = "animetosho-nzb";
+        this.type = "nzb";
+        this.accuracy = "high";
+        this.icon = "https://animetosho.org/assets/images/favicon.png";
+        this.media = "both";
+        this.languages = ["en", "ja"];
+        this.apiUrl = "https://feed.animetosho.org/api";
     }
-  }
 
-  async batch(hashes) {
-    const results = {};
-    for (const hash of hashes) {
-      results[hash] = await this.single(hash, hash);
+    /**
+     * Search via AnimeTosho API
+     * @param {string} query 
+     */
+    async search(query) {
+        try {
+            const response = await axios.get(this.apiUrl, {
+                params: { q: query },
+                headers: { 'User-Agent': 'Hayase-Plugin/1.0' },
+                timeout: 8000
+            });
+
+            // Ensure we are working with an array
+            const results = Array.isArray(response.data) ? response.data : [];
+            
+            return results.map(item => ({
+                title: item.title || "Unknown Title",
+                nzbUrl: item.nzb_url || item.link || item.download_url, 
+                size: this._formatSize(item.size),
+                date: item.date || item.added,
+                tags: item.tags || [],
+                source: "AnimeTosho"
+            }));
+        } catch (error) {
+            console.error(`[AnimeTosho] Search Error: ${error.message}`);
+            return [];
+        }
     }
-    return results;
-  }
+
+    _formatSize(bytes) {
+        if (!bytes) return "Unknown";
+        const size = parseInt(bytes);
+        if (isNaN(size)) return bytes;
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(size) / Math.log(k));
+        return parseFloat((size / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async ping() {
+        try {
+            const res = await axios.get(this.apiUrl, { params: { q: 'test' }, timeout: 3000 });
+            return res.status === 200;
+        } catch (e) {
+            return false;
+        }
+    }
 }
 
+// Hayase expects the exported instance
 module.exports = new AnimetoshoNzb();
