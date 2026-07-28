@@ -1,105 +1,68 @@
 /**
- * AnimeTosho NZB Plugin
- * Location: dist/animetosho-nzb.js
- * 
- * This file must be located in the 'dist' directory of your repository.
- * The index.json should point to the RAW URL of this file.
+ * AnimeTosho NZB Search Provider
+ * Targets: https://feed.animetosho.org/json
  */
 
-const axios = require('axios');
+export default {
+  id: "animetosho-nzb",
+  type: "nzb",
+  name: "AnimeTosho NZB",
 
-class AnimetoshoNzb {
-    constructor() {
-        this.id = "animetosho-nzb";
-        this.name = "AnimeTosho NZB";
-        this.type = "nzb";
-        this.description = "Search for anime NZBs via the AnimeTosho API";
-        this.version = "1.0.0";
-        this.apiUrl = "https://feed.animetosho.org/api";
-        this.icon = "https://animetosho.org/assets/images/favicon.png";
+  /**
+   * Performs a search against the AnimeTosho JSON feed.
+   * @param {string} query - The search term entered by the user.
+   * @returns {Promise<Array>} - A promise that resolves to an array of result objects.
+   */
+  async search(query) {
+    // If query is empty, return immediately to save resources
+    if (!query || query.trim() === "") {
+      return [];
     }
 
-    /**
-     * Main search function required by Hayase
-     * @param {string} query - The search term provided by the user
-     * @returns {Promise<Array>} - A list of search results
-     */
-    async search(query) {
-        if (!query || query.trim().length === 0) {
-            return [];
-        }
+    try {
+      // 1. Fetch from the JSON Feed API
+      // The feed uses '?q=' for the search parameter
+      const url = `https://feed.animetosho.org/json?q=${encodeURIComponent(query.trim())}`;
+      const response = await fetch(url);
 
-        try {
-            const response = await axios.get(this.apiUrl, {
-                params: { q: query },
-                headers: { 
-                    'User-Agent': 'Hayase-Plugin/1.0',
-                    'Accept': 'application/json'
-                },
-                timeout: 10000 // 10 second timeout
-            });
+      // 2. Check if the network request was successful
+      if (!response.ok) {
+        console.error(`AnimeTosho API returned status: ${response.status}`);
+        return [];
+      }
 
-            // Handle cases where API might return null or not an array
-            const data = response.data;
-            if (!data || !Array.isArray(data)) {
-                return [];
-            }
+      // 3. Parse the JSON response
+      const data = await response.json();
 
-            // Map the API response to the format Hayase expects
-            return data.map(item => {
-                return {
-                    title: item.title || "Unknown Title",
-                    nzbUrl: item.nzb_url || item.link || item.download_url || "",
-                    size: this._formatSize(item.size),
-                    date: item.date || item.added || "Unknown",
-                    tags: item.tags || [],
-                    source: "AnimeTosho"
-                };
-            }).filter(item => item.nzbUrl !== ""); // Remove results without a link
+      /**
+       * 4. DATA EXTRACTION (The Critical Part)
+       * The AnimeTosho JSON structure is:
+       * {
+       *   "items": [
+       *     { "title": "Anime Name", "link": "https://...", "description": "..." },
+       *     ...
+       *   ]
+       * }
+       * 
+       * We MUST extract 'data.items' because 'data' itself is an Object, 
+       * and returning an Object causes the "is not iterable" error.
+       */
+      const items = data.items || [];
 
-        } catch (error) {
-            console.error(`[AnimeTosho] Search failed: ${error.message}`);
-            // Return empty array so Hayase doesn't crash
-            return [];
-        }
+      // 5. Map the API format to the Hayase expected format
+      // Hayase expects: { title: string, url: string, site: string }
+      return items.map(item => ({
+        title: item.title,
+        url: item.link, // Mapping 'link' from API to 'url' for Hayase
+        site: "AnimeTosho"
+      }));
+
+    } catch (error) {
+      // 6. Error Handling
+      // We catch errors (like network failure) and return an empty array 
+      // instead of throwing an error. This prevents the entire app from crashing.
+      console.error("AnimeTosho Search Error:", error);
+      return [];
     }
-
-    /**
-     * Health check function for Hayase
-     * @returns {Promise<boolean>}
-     */
-    async ping() {
-        try {
-            const res = await axios.get(this.apiUrl, { 
-                params: { q: 'test' }, 
-                timeout: 5000 
-            });
-            return res.status === 200;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    /**
-     * Helper to convert bytes to human readable format (MB/GB)
-     * @param {string|number} bytes 
-     * @returns {string}
-     */
-    _formatSize(bytes) {
-        if (!bytes) return "Unknown";
-        const b = parseInt(bytes);
-        if (isNaN(b)) return bytes;
-        
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(b) / Math.log(k));
-        return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-}
-
-// Instantiate the class
-const plugin = new AnimetoshoNzb();
-
-// Export the instance
-// We use module.exports to ensure Hayase can 'require' this file
-module.exports = plugin;
+  }
+};
