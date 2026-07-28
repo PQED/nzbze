@@ -1,13 +1,14 @@
 {
   "name": "AnimeTosho NZB",
-  "id": "animetosho-nzb",
+  "description": "Search for anime NZBs via the AnimeTosho API",
   "version": "1.0.0",
-  "type": "nzb",
-  "accuracy": "high",
-  "icon": "https://animetosho.org/assets/images/favicon.png",
-  "media": "both",
-  "languages": ["en", "ja"],
-  "code": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js",
-  "update": "https://raw.githubusercontent.com/PQED/nzbze/main/index.json",
-  "rateLimit": 5
+  "author": "YourName",
+  "extensions": [
+    {
+      "id": "animetosho-nzb",
+      "type": "nzb",
+      "name": "AnimeTosho NZB",
+      "url": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js"
+    }
+  ]
 }
