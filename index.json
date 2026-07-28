@@ -1,10 +1,15 @@
 {
-  "extensions": [
+  "providers": [
     {
       "id": "animetosho-nzb",
-      "type": "nzb",
       "name": "AnimeTosho NZB",
-      "url": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js"
+      "type": "nzb",
+      "file": "animetosho-nzb.js",
+      "icon": "https://animetosho.org/assets/images/favicon.png",
+      "version": "1.0.0",
+      "accuracy": "high",
+      "media": "both",
+      "languages": ["en", "ja"]
     }
   ]
 }
