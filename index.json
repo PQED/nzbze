@@ -6,7 +6,7 @@
       "type": "nzb",
       "file": "animetosho-nzb.js",
       "icon": "https://animetosho.org/assets/images/favicon.png",
-      "version": "1.0.0",
+      "version": "1.0.20",
       "accuracy": "high",
       "media": "both",
       "languages": ["en", "ja"]
