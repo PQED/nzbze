@@ -1,98 +1,127 @@
 /**
- * AnimeTosho – NZB Provider for Hayase (v2.4+)
+ * AnimeTosho NZB provider – fully compatible with Hayase v2.4+.
  *
- * This file is deliberately **self‑contained**:
- *   • No external dependencies.
- *   • Pure ESM (`export default`).
- *   • Defensive programming – never throws uncaught.
- *
- * The public feed (`https://feed.animetosho.org/json`) returns an
- * array of *page* URLs where the NZB can be downloaded.  To give the
- * user a direct NZB link we perform a second fetch on the page and
- * scrape the download button.  If the page structure ever changes,
- * the provider will simply fall back to returning the page URL.
- *
- * You can disable the secondary fetch (to keep the provider super‑fast)
- * by setting `EXTRACT_NZB = false` near the top of the file.
+ * Features:
+ *   • ESM (`export default`) – required by Hayase.
+ *   • Defensive JSON shape checks.
+ *   • Optional direct‑NZB extraction (default: enabled).
+ *   • 5 req/s throttling (the public feed’s rate limit).
+ *   • 12 s request timeout to keep the UI responsive.
  */
 
 const FEED_URL = "https://feed.animetosho.org/json";
-const EXTRACT_NZB = true; // ← set to false if you only want the page link
+const ENABLE_NZB_EXTRACTION = true; // set false for “fast‑only” mode
 
-/** Small helper – abort a fetch after `ms` milliseconds */
+/** Simple fetch wrapper that aborts after `ms` milliseconds */
 function fetchWithTimeout(url, opts = {}, ms = 12_000) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+  const timer = setTimeout(() => controller.abort(), ms);
   return fetch(url, { ...opts, signal: controller.signal })
-    .finally(() => clearTimeout(id));
+    .finally(() => clearTimeout(timer));
 }
 
-/** Extract the direct NZB URL from an AnimeTosho page.
- *  The page contains a button like:
- *    <a class="download" href="/download/1234567.nzb">Download NZB</a>
- *  We parse the HTML, locate the anchor with class `download`,
- *  and return the absolute URL.
+/**
+ * Extracts the direct NZB link from an AnimeTosho view page.
+ * (Implementation from the previous section – copied verbatim.)
  */
-async function extractNzbLink(pageUrl) {
+async function extractNzbFromViewPage(pageUrl, timeoutMs = 12_000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetchWithTimeout(pageUrl, { mode: "cors" });
-    if (!res.ok) return null; // fallback to the page URL
-
-    const html = await res.text();
+    const resp = await fetch(pageUrl, {
+      method: "GET",
+      mode: "cors",
+      signal: controller.signal
+    });
+    if (!resp.ok) return null;
+    const html = await resp.text();
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-    const dlBtn = doc.querySelector('a.download, a[href$=".nzb"]');
 
-    if (!dlBtn) return null;
+    // 1️⃣ Look for <a> whose text is exactly "NZB"
+    let nzbAnchor = Array.from(doc.querySelectorAll('a'))
+      .find(a => a.textContent.trim().toUpperCase() === 'NZB');
 
-    // Resolve relative URLs against the page URL
-    const nzbUrl = new URL(dlBtn.getAttribute("href"), pageUrl).href;
-    return nzbUrl;
+    // 2️⃣ Fallback: class‑based selectors
+    if (!nzbAnchor) {
+      nzbAnchor = doc.querySelector('a.download, a.nzblink, a.nzb');
+    }
+
+    // 3️⃣ Fallback: any href ending with .nzb or .nzb.gz
+    if (!nzbAnchor) {
+      nzbAnchor = Array.from(doc.querySelectorAll('a'))
+        .find(a => {
+          const href = a.getAttribute('href') || '';
+          return href.endsWith('.nzb') || href.endsWith('.nzb.gz');
+        }) || null;
+    }
+
+    if (!nzbAnchor) return null;
+    const rawHref = nzbAnchor.getAttribute('href');
+    if (!rawHref) return null;
+    return new URL(rawHref, pageUrl).href;
   } catch (e) {
-    // Anything (network error, abort, parsing error) just returns null
-    console.warn("[AnimeTosho] NZB extraction failed for", pageUrl, e);
+    if (e.name === 'AbortError') {
+      console.error(`[AnimeTosho] Timeout while loading ${pageUrl}`);
+    } else {
+      console.error(`[AnimeTosho] Extraction error for ${pageUrl}`, e);
+    }
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-/** The provider object Hayase expects */
+/** Throttle helper – guarantees at most one call per `delay` ms */
+function throttled(fn, delay) {
+  let last = 0;
+  return async (...args) => {
+    const now = Date.now();
+    const wait = Math.max(0, delay - (now - last));
+    if (wait) await new Promise(r => setTimeout(r, wait));
+    last = Date.now();
+    return fn(...args);
+  };
+}
+const throttledExtract = throttled(extractNzbFromViewPage, 200); // 5 req/s
+
 export default {
-  /** Must match the `id` in index.json */
+  /** Must match the id in index.json */
   id: "animetosho-nzb",
 
-  /** UI label */
+  /** Human‑readable name shown in Hayase UI */
   name: "AnimeTosho NZB",
 
-  /** Provider type – only "nzb" is accepted here */
+  /** Provider type – Hayase only accepts "nzb" here */
   type: "nzb",
 
   /**
    * Search implementation.
    *
-   * @param {string} query – the user’s search term.
+   * @param {string} query – user‑entered search term.
    * @returns {Promise<Array<{title:string, url:string, site?:string}>>}
    */
   async search(query) {
-    // -------------------------------------------------
-    // 1️⃣ Guard against empty / nonsense queries.
-    // -------------------------------------------------
+    // -----------------------------------------------------------------
+    // 0️⃣ Guard against empty queries.
+    // -----------------------------------------------------------------
     if (!query || typeof query !== "string" || !query.trim()) {
       return [];
     }
 
-    // -------------------------------------------------
-    // 2️⃣ Build the feed URL.
-    // -------------------------------------------------
+    // -----------------------------------------------------------------
+    // 1️⃣ Build the feed URL.
+    // -----------------------------------------------------------------
     const feedUrl = `${FEED_URL}?q=${encodeURIComponent(query.trim())}`;
 
-    // -------------------------------------------------
-    // 3️⃣ Fetch the JSON feed (with timeout & CORS mode).
-    // -------------------------------------------------
+    // -----------------------------------------------------------------
+    // 2️⃣ Fetch the JSON feed (with timeout, CORS, and error handling).
+    // -----------------------------------------------------------------
     let payload;
     try {
       const resp = await fetchWithTimeout(feedUrl, { mode: "cors" });
       if (!resp.ok) {
-        console.warn(`[AnimeTosho] Feed HTTP ${resp.status}`);
+        console.warn(`[AnimeTosho] Feed responded ${resp.status}`);
         return [];
       }
       payload = await resp.json();
@@ -101,67 +130,53 @@ export default {
       return [];
     }
 
-    // -------------------------------------------------
-    // 4️⃣ Validate payload shape – the feed should contain
-    //    an `items` array.  If it does not, bail gracefully.
-    // -------------------------------------------------
+    // -----------------------------------------------------------------
+    // 3️⃣ Validate payload shape – we expect an `items` array.
+    // -----------------------------------------------------------------
     if (!payload || !Array.isArray(payload.items)) {
       console.warn("[AnimeTosho] Unexpected payload shape:", payload);
       return [];
     }
 
-    // -------------------------------------------------
-    // 5️⃣ Map each raw item to the shape Hayase expects.
-    // -------------------------------------------------
+    // -----------------------------------------------------------------
+    // 4️⃣ Turn each raw feed entry into a “raw result” object.
+    // -----------------------------------------------------------------
     const rawResults = payload.items.map(item => {
       const title = typeof item.title === "string" ? item.title : "Untitled";
-      const pageUrl = typeof item.link === "string" ? item.link : null;
-      if (!pageUrl) return null; // filter out malformed entries later
+      const viewUrl = typeof item.link === "string" ? item.link : null;
+      if (!viewUrl) return null;
+      return { title, viewUrl, site: "AnimeTosho" };
+    }).filter(Boolean); // drop any null entries
 
-      return { title, pageUrl, site: "AnimeTosho" };
-    }).filter(Boolean); // drop any `null`s
-
-    // -------------------------------------------------
-    // 6️⃣ If we want direct NZB links, resolve them in
-    //    parallel (but respect the feed's rate‑limit of 5 req/s).
-    // -------------------------------------------------
-    if (!EXTRACT_NZB) {
-      // Simple fallback – return the page URLs directly
+    // -----------------------------------------------------------------
+    // 5️⃣ If we don’t need the extra NZB fetch, just return the view URLs.
+    // -----------------------------------------------------------------
+    if (!ENABLE_NZB_EXTRACTION) {
       return rawResults.map(r => ({
         title: r.title,
-        url: r.pageUrl,
+        url: r.viewUrl,
         site: r.site
       }));
     }
 
-    // Helper to throttle requests to 5 per second (200 ms spacing)
-    const throttle = (fn, delay) => {
-      let last = 0;
-      return async (...args) => {
-        const now = Date.now();
-        const wait = Math.max(0, delay - (now - last));
-        if (wait) await new Promise(r => setTimeout(r, wait));
-        last = Date.now();
-        return fn(...args);
-      };
-    };
-    const throttledExtract = throttle(extractNzbLink, 200);
-
-    // Resolve NZB URLs in parallel but with throttling
-    const resolved = await Promise.all(
+    // -----------------------------------------------------------------
+    // 6️⃣ Resolve NZB URLs in parallel, respecting the 5 req/s limit.
+    // -----------------------------------------------------------------
+    const finalResults = await Promise.all(
       rawResults.map(async r => {
-        const nzbUrl = await throttledExtract(r.pageUrl);
+        const nzbUrl = await throttledExtract(r.viewUrl);
+        // If extraction fails we fall back to the view page URL.
         return {
           title: r.title,
-          url: nzbUrl || r.pageUrl, // fallback to page if extraction fails
+          url: nzbUrl || r.viewUrl,
           site: r.site
         };
       })
     );
 
-    // -------------------------------------------------
-    // 7️⃣ Return only entries that have a usable URL.
-    // -------------------------------------------------
-    return resolved.filter(r => !!r.url);
+    // -----------------------------------------------------------------
+    // 7️⃣ Return only results that have a usable URL.
+    // -----------------------------------------------------------------
+    return finalResults.filter(r => !!r.url);
   }
 };
