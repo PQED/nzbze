@@ -1,14 +1,10 @@
 {
-  "name": "AnimeTosho NZB",
-  "description": "Search for anime NZBs via the AnimeTosho API",
-  "version": "1.0.0",
-  "author": "YourName",
   "extensions": [
     {
       "id": "animetosho-nzb",
       "type": "nzb",
       "name": "AnimeTosho NZB",
-      "url": "https://raw.githubusercontent.com/PQED/nzbze/main/dist/animetosho-nzb.js"
+      "url": "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/dist/animetosho-nzb.js"
     }
   ]
 }
